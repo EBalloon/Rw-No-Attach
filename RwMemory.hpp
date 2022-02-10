@@ -36,7 +36,7 @@ void AttachProcess(PEPROCESS Process, PRKAPC_STATE ApcState)
 
 	auto DirectoryTableBase = GetDirectoryTableBase(Process);
 	if ((DirectoryTableBase & 2) != 0)
-		DirectoryTableBase = DirectoryTableBase | 0x8000000000000000ui64;
+		DirectoryTableBase = DirectoryTableBase | 0x8000000000000000u;
 
 	__writegsqword(0x9000u, DirectoryTableBase);
 	__writecr3(DirectoryTableBase);
