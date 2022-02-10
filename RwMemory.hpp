@@ -136,15 +136,19 @@ NTSTATUS ReadVirtualMemory(
 }
 
 
-NTSTATUS ReadProcessMemory(PEPROCESS Process, PVOID Address, PVOID Buffer, SIZE_T Size)
+NTSTATUS ReadProcessMemory(HANDLE ProcessPid, PVOID Address, PVOID Buffer, SIZE_T Size)
 {
 	KAPC_STATE ApcState;
 
-	CurrentThread = PEThread(KeGetCurrentThread());
-
-	AttachProcess(Process, &ApcState);
-	auto Status = ReadVirtualMemory(Process, Buffer, Address, Size);
-	detachProcess(&ApcState);
-
-	return Status;
+	PEPROCESS Process = { 0 };
+	auto ntStatus = PsLookupProcessByProcessId(ProcessPid, &Process);
+	if (NT_SUCCESS(ntStatus) && Process)
+	{
+	     CurrentThread = PEThread(KeGetCurrentThread());
+	     AttachProcess(Process, &ApcState);
+	     ntStatus = ReadVirtualMemory(Process, Buffer, Address, Size);
+	     detachProcess(&ApcState);
+	}
+	
+	return ntStatus;
 }
