@@ -30,6 +30,7 @@ uint64_t GetDirectoryTableBase(PEPROCESS Process)
 
 void AttachProcess(PEPROCESS Process, PRKAPC_STATE ApcState)
 {
+	CurrentThread = PEThread(KeGetCurrentThread());
 	InitializeListHead(&CurrentThread->ApcState.ApcListHead[KernelMode]);
 	InitializeListHead(&CurrentThread->ApcState.ApcListHead[UserMode]);
 
@@ -144,7 +145,6 @@ NTSTATUS ReadProcessMemory(HANDLE ProcessPid, PVOID Address, PVOID Buffer, SIZE_
 	auto ntStatus = PsLookupProcessByProcessId(ProcessPid, &Process);
 	if (NT_SUCCESS(ntStatus) && Process)
 	{
-	     CurrentThread = PEThread(KeGetCurrentThread());
 	     AttachProcess(Process, &ApcState);
 	     ntStatus = ReadVirtualMemory(Process, Buffer, Address, Size);
 	     detachProcess(&ApcState);
