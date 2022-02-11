@@ -39,9 +39,6 @@ void AttachProcess(PEPROCESS Process, PETHREAD Thread)
 		result = __readcr3();
 		__writecr3(result);
 	}
-
-	// restore to the old
-	*(uint64_t*)(uint64_t(Thread) + 0xB8) = OldAttach;
 }
 
 void DetachProcess(PEPROCESS Process, PETHREAD Thread)
