@@ -1,5 +1,6 @@
 
 ### Example:
 
-        Status = ReadProcessMemory(Process, Address, &Source, Size);
-        Printf("Value: %llu\n", Source);
+        Status = ReadProcessMemory(ProcessPid, Address, &Address, Size);
+        if (NT_SUCCESS(Status) && Address)
+            Printf("Value: %llu\n", Address);
