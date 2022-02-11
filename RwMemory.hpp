@@ -1,5 +1,4 @@
 uint64_t OldAttach;
-uint64_t OlThreadLock;
 uint64_t GetDirectoryTableBase(PEPROCESS Process)
 {
 	return *(uint64_t*)(uint64_t(Process) + 0x28);
@@ -14,10 +13,6 @@ void AttachProcess(PEPROCESS Process, PETHREAD Thread)
 	//Attach to Process
 	OldAttach = *(uint64_t*)(uint64_t(Thread) + 0xB8);
 	*(uint64_t*)(uint64_t(Thread) + 0xB8) = uint64_t(Process);
-
-	// ThreadLock
-	OlThreadLock = *(uint64_t*)(uint64_t(Thread) + 0x40);
-	*(uint64_t*)(uint64_t(Thread) + 0x40) = 0;
 
 	// KernelApcPending
 	*(uint64_t*)(uint64_t(Thread) + 0x98 + 0x29) = 0;
@@ -56,9 +51,6 @@ void DetachProcess(PEPROCESS Process, PETHREAD Thread)
 
 	// restore to the old
 	*(uint64_t*)(uint64_t(Thread) + 0xB8) = OldAttach;
-
-	// ThreadLock old
-	*(uint64_t*)(uint64_t(Thread) + 0x40) = OlThreadLock;
 
 	// KernelApcPending
 	*(uint64_t*)(uint64_t(Thread) + 0x98 + 0x29) = 1;
