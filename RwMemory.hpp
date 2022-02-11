@@ -22,7 +22,7 @@ void AttachProcess(PEPROCESS Process, PETHREAD Thread)
 	// KernelApcPending
 	*(uint64_t*)(uint64_t(Thread) + 0x98 + 0x29) = 0;
 
-	//Get DirectoryTableBase(Process);
+	//Get DirectoryTableBase;
 	DirectoryTableBase = GetDirectoryTableBase(Process);
 	if ((DirectoryTableBase & 2) != 0)
 		DirectoryTableBase = DirectoryTableBase | 0x8000000000000000u;
