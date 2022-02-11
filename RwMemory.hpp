@@ -1,64 +1,67 @@
-
-
-template < typename Type >
-Type Read(Type address, uint32_t offset) noexcept {
-
-	if (address == Type(0)) {
-		return Type(0);
-	}
-
-	return *reinterpret_cast<Type*>(uintptr_t(address) + offset);
-}
-
-typedef struct _EThread
-{
-	typedef struct _KAPC_STATE
-	{
-		struct _LIST_ENTRY ApcListHead[2];
-	} KAPC_STATE, * PKAPC_STATE, * PRKAPC_STATE;
-
-	char pad_0x00[0x98]; // KTHREAD->ApcState // Windows 10 | 2004 - 20H1
-	KAPC_STATE ApcState;
-
-} EThread, * PEThread;
-PEThread CurrentThread;
-
+uint64_t OldAttach;
+uint64_t OlThreadLock;
 uint64_t GetDirectoryTableBase(PEPROCESS Process)
 {
-	return Read<uint64_t>(uint64_t(Process), 0x28);
+	return *(uint64_t*)(uint64_t(Process) + 0x28);
 }
 
-void AttachProcess(PEPROCESS Process, PRKAPC_STATE ApcState)
+void AttachProcess(PEPROCESS Process, PETHREAD Thread)
 {
-	CurrentThread = PEThread(KeGetCurrentThread());
-	InitializeListHead(&CurrentThread->ApcState.ApcListHead[KernelMode]);
-	InitializeListHead(&CurrentThread->ApcState.ApcListHead[UserMode]);
+	uint64_t DirectoryTableBase;
+	uint64_t result;
+	uint64_t Value;
 
-	auto DirectoryTableBase = GetDirectoryTableBase(Process);
+	//Attach to Process
+	OldAttach = *(uint64_t*)(uint64_t(Thread) + 0xB8);
+	*(uint64_t*)(uint64_t(Thread) + 0xB8) = uint64_t(Process);
+
+	// ThreadLock
+	OlThreadLock = *(uint64_t*)(uint64_t(Thread) + 0x40);
+	*(uint64_t*)(uint64_t(Thread) + 0x40) = 0;
+
+	// KernelApcPending
+	*(uint64_t*)(uint64_t(Thread) + 0x98 + 0x29) = 0;
+
+	//Get DirectoryTableBase(Process);
+	DirectoryTableBase = GetDirectoryTableBase(Process);
 	if ((DirectoryTableBase & 2) != 0)
 		DirectoryTableBase = DirectoryTableBase | 0x8000000000000000u;
 
+	// Write offset to DirectoryTableBase
 	__writegsqword(0x9000u, DirectoryTableBase);
 	__writecr3(DirectoryTableBase);
 
-	auto Value = __readcr4();
+	// Temp Control Register
+	Value = __readcr4();
 	if ((Value & 0x20080) != 0)
 	{
+		result = Value ^ 0x80;
 		__writecr4(Value ^ 0x80);
 		__writecr4(Value);
 	}
 	else
 	{
-		Value = __readcr3();
-		__writecr3(Value);
+		result = __readcr3();
+		__writecr3(result);
 	}
+
+	// restore to the old
+	*(uint64_t*)(uint64_t(Thread) + 0xB8) = OldAttach;
 }
 
-void detachProcess(PRKAPC_STATE ApcState)
+void DetachProcess(PEPROCESS Process, PETHREAD Thread)
 {
-	Sleep(1);
-	RemoveHeadList(&CurrentThread->ApcState.ApcListHead[KernelMode]);
-	RemoveHeadList(&CurrentThread->ApcState.ApcListHead[UserMode]);
+	// Due to DCP the communication with usermode will crash, so we put a Sleep() 1 Millisecond for me it should be enough, so you need to test 
+	RtlSleep(1);
+
+	// restore to the old
+	*(uint64_t*)(uint64_t(Thread) + 0xB8) = OldAttach;
+
+	// ThreadLock old
+	*(uint64_t*)(uint64_t(Thread) + 0x40) = OlThreadLock;
+
+	// KernelApcPending
+	*(uint64_t*)(uint64_t(Thread) + 0x98 + 0x29) = 1;
 }
 
 NTSTATUS ReadVirtualMemory(
@@ -136,19 +139,19 @@ NTSTATUS ReadVirtualMemory(
 	return ntStatus;
 }
 
-
 NTSTATUS ReadProcessMemory(HANDLE ProcessPid, PVOID Address, PVOID Buffer, SIZE_T Size)
 {
-	KAPC_STATE ApcState;
-
 	PEPROCESS Process = { 0 };
 	auto ntStatus = PsLookupProcessByProcessId(ProcessPid, &Process);
 	if (NT_SUCCESS(ntStatus) && Process)
 	{
-	     AttachProcess(Process, &ApcState);
-	     ntStatus = ReadVirtualMemory(Process, Buffer, Address, Size);
-	     detachProcess(&ApcState);
+		auto CurrentThread = KeGetCurrentThread();
+
+		AttachProcess(Process, CurrentThread);
+		ntStatus = ReadVirtualMemory(Process, Buffer, Address, Size);
+		DetachProcess(Process, CurrentThread);
 	}
-	
+
+	ObDereferenceObject(Process);
 	return ntStatus;
 }
