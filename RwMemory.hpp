@@ -12,8 +12,8 @@ void AttachProcess(PEPROCESS Process, PETHREAD Thread)
 	uint64_t Value;
  
 	//Attach to Process
-	//OldAttach = *(uint64_t*)(uint64_t(Thread) + 0xB8);
-	//*(uint64_t*)(uint64_t(Thread) + 0xB8) = uint64_t(Process);
+	OldAttach = *(uint64_t*)(uint64_t(Thread) + 0xB8);
+	*(uint64_t*)(uint64_t(Thread) + 0xB8) = uint64_t(Process);
  
 	// KernelApcPending
 	*(uint64_t*)(uint64_t(Thread) + 0x98 + 0x29) = 0;
@@ -44,14 +44,14 @@ void AttachProcess(PEPROCESS Process, PETHREAD Thread)
  
 void DetachProcess(PEPROCESS Process, PETHREAD Thread)
 {
-	// Due to DCP the communication with usermode will crash, so we put a Sleep() 1 Millisecond for me it should be enough, so you need to test 
-	RtlSleep(1);
- 
 	// restore to the old
-	//*(uint64_t*)(uint64_t(Thread) + 0xB8) = OldAttach;
+	*(uint64_t*)(uint64_t(Thread) + 0xB8) = OldAttach;
  
 	// KernelApcPending
 	*(uint64_t*)(uint64_t(Thread) + 0x98 + 0x29) = 1;
+	
+	// Due to DCP the communication with usermode will crash, so we put a Sleep() 1 Millisecond for me it should be enough, so you need to test 
+	RtlSleep(1);
 }
  
 NTSTATUS ReadVirtualMemory(
