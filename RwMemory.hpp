@@ -1,4 +1,4 @@
-uint64_t OldAttach; // Use this for long read
+uint64_t OldAttach;
  
 uint64_t GetDirectoryTableBase(PEPROCESS Process)
 {
