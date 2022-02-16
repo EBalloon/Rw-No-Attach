@@ -3,7 +3,7 @@ OK, let's go.
 I did it in less than a day because I was bored.
 The code isn't perfect, but it does the job!
 
-you can use other apis like you use when using KeAttachProcess/KeStackAttachProcess 
+This replaces KeAttachProcess/KeStackAttachProcess 
 
 
 ### Example:
