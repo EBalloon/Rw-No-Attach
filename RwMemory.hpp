@@ -5,6 +5,16 @@
     	return *(uint64_t*)(uint64_t(Process) + 0x28);
     }
      
+    void
+    Sleep(
+	    ULONG Milliseconds
+    )
+    {
+	    LARGE_INTEGER Timeout;
+	    Timeout.QuadPart = -1 * 10000LL * (LONGLONG)Milliseconds;
+	    KeDelayExecutionThread(KernelMode, FALSE, &Timeout);
+    }
+
     void AttachProcess(PEPROCESS Process, uint64_t* OldAttach, bool IsAttached = false)
     {
     	uint64_t DirectoryTableBase;
