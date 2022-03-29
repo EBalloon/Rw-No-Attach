@@ -26,6 +26,7 @@ MoveApcState(PKAPC_STATE OldState,
 	CopyList(OldState->ApcListHead, NewState->ApcListHead, UserMode);
 }
 
+uintptr_t OldProcess;
 void AttachProcess(PEPROCESS NewProcess)
 {
 	PKTHREAD Thread = KeGetCurrentThread();
@@ -45,6 +46,8 @@ void AttachProcess(PEPROCESS NewProcess)
 
 	InitializeListHead(&ApcState->ApcListHead[KernelMode]);
 	InitializeListHead(&ApcState->ApcListHead[UserMode]);
+
+	OldProcess = *(uintptr_t*)(uintptr_t(ApcState) + 0x20);
 
 	*(PEPROCESS*)(uintptr_t(ApcState) + 0x20) = NewProcess; // 0x20 = _KAPC_STATE::Process
 	*(UCHAR*)(uintptr_t(ApcState) + 0x28) = 0;				// 0x28 = _KAPC_STATE::InProgressFlags
@@ -73,6 +76,10 @@ void DetachProcess()
 	}
 
 	MoveApcState(*(PKAPC_STATE*)(uintptr_t(Thread) + 0x258), ApcState); // 0x258 = _KTHREAD::SavedApcState
+
+	if (OldProcess)
+		*(uintptr_t*)(uintptr_t(ApcState) + 0x20) = OldProcess; // 0x20 = _KAPC_STATE::Process
+
 	*(PEPROCESS*)(*(uintptr_t*)(uintptr_t(Thread) + 0x258) + 0x20) = 0; // 0x258 = _KTHREAD::SavedApcState + 0x20 = _KAPC_STATE::Process
 
 	*(UCHAR*)(uintptr_t(Thread) + 0x24a) = 0; // 0x24a = _KTHREAD::ApcStateIndex
@@ -86,6 +93,8 @@ void DetachProcess()
 	}
 
 	RemoveEntryList(&ApcState->ApcListHead[KernelMode]);
+
+	OldProcess = 0;
 }
 
 PHYSICAL_ADDRESS
