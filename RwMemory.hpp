@@ -9,7 +9,6 @@ CopyList(IN PLIST_ENTRY Original,
 	}
 	else
 	{
-		/* Copy the lists */
 		Copy[Mode].Flink = Original[Mode].Flink;
 		Copy[Mode].Blink = Original[Mode].Blink;
 		Original[Mode].Flink->Blink = &Copy[Mode];
