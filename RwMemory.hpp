@@ -253,17 +253,3 @@ PVOID GetModuleBaseProcess(
 
 	return mBase;
 }
-
-     
-    NTSTATUS ReadProcessMemory(HANDLE ProcessPid, PVOID Address, PVOID Buffer, SIZE_T Size)
-    {
-    	PEPROCESS Process = { 0 };
-    	auto ntStatus = PsLookupProcessByProcessId(ProcessPid, &Process);
-    	if (NT_SUCCESS(ntStatus) && Process)
-    	{
-    		ntStatus = ReadVirtualMemory(Process, Buffer, Address, Size);
-    	}
-     
-    	ObDereferenceObject(Process);
-    	return ntStatus;
-    }
