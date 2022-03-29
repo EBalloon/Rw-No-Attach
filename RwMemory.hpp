@@ -3,10 +3,8 @@ CopyList(IN PLIST_ENTRY Original,
 	IN PLIST_ENTRY Copy,
 	IN KPROCESSOR_MODE Mode)
 {
-	/* Check if the list for this mode is empty */
 	if (IsListEmpty(&Original[Mode]))
 	{
-		/* It is, all we need to do is initialize it */
 		InitializeListHead(&Copy[Mode]);
 	}
 	else
@@ -23,10 +21,8 @@ void
 KiMoveApcState(PKAPC_STATE OldState,
 	PKAPC_STATE NewState)
 {
-	/* Restore backup of Original Environment */
 	RtlCopyMemory(NewState, OldState, sizeof(KAPC_STATE));
 
-	/* Repair Lists */
 	CopyList(OldState->ApcListHead, NewState->ApcListHead, KernelMode);
 	CopyList(OldState->ApcListHead, NewState->ApcListHead, UserMode);
 }
@@ -129,34 +125,26 @@ NTSTATUS ReadVirtualMemory(
 	PVOID MappedIoSpace;
 	BOOLEAN IsAttached;
 
-	// 1. Attach to the process
-	//    Sets specified process's PML4 to the CR3
 	AttachProcess(Process);
 	IsAttached = TRUE;
 
 	if (!MmIsAddressValid(Source))
 		goto _Exit;
 
-	// 2. Get the physical address corresponding to the user virtual memory
 	SourcePhysicalAddress = SafeMmGetPhysicalAddress(Source);
 
-	// 3. Detach from the process
-	//    Restores previous the current thread
 	DetachProcess();
 	IsAttached = FALSE;
 
 	if (!SourcePhysicalAddress.QuadPart)
 		return ntStatus;
 
-	// 4. Map an IO space for MDL
 	MappedIoSpace = MmMapIoSpaceEx(SourcePhysicalAddress, Size, PAGE_READWRITE);
 	if (!MappedIoSpace)
 		goto _Exit;
 
-	// 5. copy memory
 	memcpy(Destination, MappedIoSpace, Size);
 
-	// 6. Free Map
 	MmUnmapIoSpace(MappedIoSpace, Size);
 
 	ntStatus = STATUS_SUCCESS;
@@ -180,34 +168,26 @@ NTSTATUS WriteVirtualMemory(
 	PVOID MappedIoSpace;
 	BOOLEAN IsAttached;
 
-	// 1. Attach to the process
-	  //    Sets specified process's PML4 to the CR3
 	AttachProcess(Process);
 	IsAttached = TRUE;
 
 	if (!MmIsAddressValid(Source))
 		goto _Exit;
 
-	// 2. Get the physical address corresponding to the user virtual memory
 	SourcePhysicalAddress = SafeMmGetPhysicalAddress(Source);
 
-	// 3. Detach from the process
-	//    Restores previous the current thread
 	DetachProcess();
 	IsAttached = FALSE;
 
 	if (!SourcePhysicalAddress.QuadPart)
 		return ntStatus;
 
-	// 4. Map an IO space for MDL
 	MappedIoSpace = MmMapIoSpaceEx(SourcePhysicalAddress, Size, PAGE_READWRITE);
 	if (!MappedIoSpace)
 		goto _Exit;
 
-	// 5. copy memory
 	memcpy(MappedIoSpace, Destination, Size);
 
-	// 6. Free Map
 	MmUnmapIoSpace(MappedIoSpace, Size);
 
 	ntStatus = STATUS_SUCCESS;
