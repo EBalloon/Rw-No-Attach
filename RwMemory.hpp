@@ -107,9 +107,9 @@ SafeMmGetPhysicalAddress(PVOID BaseAddress)
 		KdEnteredDebugger = reinterpret_cast<BOOLEAN*>(MmGetSystemRoutineAddress(&UniCodeFunctionName));
 	}
 
-	*KdEnteredDebugger = FALSE;
-	PHYSICAL_ADDRESS PhysicalAddress = MmGetPhysicalAddress(BaseAddress);
 	*KdEnteredDebugger = TRUE;
+	PHYSICAL_ADDRESS PhysicalAddress = MmGetPhysicalAddress(BaseAddress);
+	*KdEnteredDebugger = FALSE;
 
 	return PhysicalAddress;
 }
