@@ -13,3 +13,7 @@ This replaces KeAttachProcess/KeStackAttachProcess
         Printf("Value: %llu\n", Buffer);
 
 ### Tested on Windows 10 2004 - 20H1
+
+    you need to map the driver
+    no need to call EntryPoint
+    just call the spoofer function
